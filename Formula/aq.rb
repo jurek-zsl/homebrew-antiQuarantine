@@ -3,7 +3,7 @@ class Aq < Formula
   homepage "https://github.com/jurek-zsl/antiQuarantine/"
   url "https://github.com/jurek-zsl/homebrew-antiQuarantine/releases/download/v1.1.0/aq"
   sha256 "13f443cce3ac1f17f5b71425745bdcb95c9ac2d246fedf043b9079bb6b1c0190"
-  version "1.0.0"
+  version "1.1.0"
 
   def install
     bin.install "aq"
