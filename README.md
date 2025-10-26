@@ -85,4 +85,4 @@ If you find **antiQuarantine** helpful, please consider giving it a star on GitH
 
 ## 🤝Contributing
 
-- Feel free to open issues or PRs in the repository
+- I'm open on new ideas and improvements, feel free to create an issue or PR.
