@@ -1,8 +1,8 @@
 class Aq < Formula
   desc "antiQuarantine — CLI to remove com.apple.quarantine xattr from files"
   homepage "https://github.com/jurek-zsl/antiQuarantine/"
-  url "https://github.com/jurek-zsl/homebrew-antiQuarantine/releases/download/v1.0.0/aq"
-  sha256 "4afa6033db6ab3834d00df4739c27c45582bdf379eb7112e968f461d896d75e1"
+  url "https://github.com/jurek-zsl/homebrew-antiQuarantine/releases/download/v1.1.0/aq"
+  sha256 "13f443cce3ac1f17f5b71425745bdcb95c9ac2d246fedf043b9079bb6b1c0190"
   version "1.0.0"
 
   def install

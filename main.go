@@ -13,11 +13,17 @@ const version = "1.0.0"
 
 func main() {
 	// Manual arg parse to support long flags and combined -rf
-	removeFlag, folderArg, versionFlag, helpFlag, positional, parseErr := parseArgs(os.Args[1:])
+	// Add hidden cat2gether flag (not shown in help) — parse it here
+	removeFlag, folderArg, versionFlag, helpFlag, cat2getherFlag, positional, parseErr := parseArgs(os.Args[1:])
 	if parseErr != nil {
 		fmt.Fprintln(os.Stderr, "Error parsing args:", parseErr)
 		printUsage()
 		os.Exit(1)
+	}
+
+	if cat2getherFlag {
+		printCat2getherAd()
+		os.Exit(0)
 	}
 
 	if versionFlag {
@@ -98,8 +104,28 @@ func printUsage() {
 	fmt.Fprintln(os.Stderr, "  com.apple.quarantine extended attribute. It must be run on macOS.")
 }
 
+// Hidden promotional ad for Cat2gether — triggered by -c2g / --cat2gether (not shown in help)
+func printCat2getherAd() {
+	// Two header lines
+	fmt.Println()
+	fmt.Println("cat2gether — best dating app for geeks & nerds!")
+	fmt.Println("Find your purr-fect match!")
+	fmt.Println()
+	// ASCII cat block (user provided)
+	fmt.Println("   |\\---/|")
+	fmt.Println("   | ,_, |")
+	fmt.Println("    \\_`_/-..----.")
+	fmt.Println(" ___/ `   ' ,\"\"+ \\  ")
+	fmt.Println("(__...'   __\\    |`.___.';")
+	fmt.Println("  (_,...'(_,.`__)/'.....+")
+	fmt.Println()
+	// Find out more line
+	fmt.Println("Find out more: https://cat2gether.com")
+	fmt.Println()
+}
+
 // parseArgs handles short and long flags and supports combined -rf
-func parseArgs(in []string) (remove bool, folder string, ver bool, help bool, positional []string, err error) {
+func parseArgs(in []string) (remove bool, folder string, ver bool, help bool, cat2gether bool, positional []string, err error) {
 	i := 0
 	for i < len(in) {
 		a := in[i]
@@ -110,7 +136,7 @@ func parseArgs(in []string) (remove bool, folder string, ver bool, help bool, po
 		}
 		if a == "--folder" {
 			if i+1 >= len(in) {
-				return false, "", false, false, nil, errors.New("--folder requires an argument")
+				return false, "", false, false, false, nil, errors.New("--folder requires an argument")
 			}
 			folder = in[i+1]
 			i += 2
@@ -126,6 +152,11 @@ func parseArgs(in []string) (remove bool, folder string, ver bool, help bool, po
 			i++
 			continue
 		}
+		if a == "--cat2gether" {
+			cat2gether = true
+			i++
+			continue
+		}
 
 		if strings.HasPrefix(a, "--folder=") {
 			folder = strings.TrimPrefix(a, "--folder=")
@@ -134,12 +165,12 @@ func parseArgs(in []string) (remove bool, folder string, ver bool, help bool, po
 		}
 		if strings.HasPrefix(a, "-") {
 			// short or combined
-			// handle -rf, -fr, -r, -f <arg>, -v, -h
+			// handle -rf, -fr, -r, -f <arg>, -v, -h, -c2g
 			// If exactly -rf or -fr, next token is folder
 			if a == "-rf" || a == "-fr" {
 				remove = true
 				if i+1 >= len(in) {
-					return false, "", false, false, nil, errors.New("-f requires a directory argument")
+					return false, "", false, false, false, nil, errors.New("-f requires a directory argument")
 				}
 				folder = in[i+1]
 				i += 2
@@ -161,6 +192,11 @@ func parseArgs(in []string) (remove bool, folder string, ver bool, help bool, po
 				i++
 				continue
 			}
+			if a == "-c2g" {
+				cat2gether = true
+				i++
+				continue
+			}
 			if strings.HasPrefix(a, "-f=") {
 				folder = strings.TrimPrefix(a, "-f=")
 				i++
@@ -168,21 +204,21 @@ func parseArgs(in []string) (remove bool, folder string, ver bool, help bool, po
 			}
 			if a == "-f" {
 				if i+1 >= len(in) {
-					return false, "", false, false, nil, errors.New("-f requires a directory argument")
+					return false, "", false, false, false, nil, errors.New("-f requires a directory argument")
 				}
 				folder = in[i+1]
 				i += 2
 				continue
 			}
 			// unknown short flag
-			return false, "", false, false, nil, fmt.Errorf("unknown flag: %s", a)
+			return false, "", false, false, false, nil, fmt.Errorf("unknown flag: %s", a)
 		}
 
 		// positional
 		positional = append(positional, a)
 		i++
 	}
-	return remove, folder, ver, help, positional, nil
+	return remove, folder, ver, help, cat2gether, positional, nil
 }
 
 func ensureExists(path string) error {
