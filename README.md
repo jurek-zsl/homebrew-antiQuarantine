@@ -24,7 +24,11 @@ Simple CLI tool for removing the `com.apple.quarantine` extended attribute from 
   brew tap jurek-zsl/antiquarantine
   brew install aq
   ```
-
+  
+- Updating:
+  ```
+  brew upgrade aq
+  ```
 ## 📋Usage
 
 > [!TIP]
