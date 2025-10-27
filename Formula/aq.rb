@@ -1,9 +1,9 @@
 class Aq < Formula
   desc "antiQuarantine — CLI to remove com.apple.quarantine xattr from files"
   homepage "https://github.com/jurek-zsl/antiQuarantine/"
-  url "https://github.com/jurek-zsl/homebrew-antiQuarantine/releases/download/v1.1.0/aq"
-  sha256 "13f443cce3ac1f17f5b71425745bdcb95c9ac2d246fedf043b9079bb6b1c0190"
-  version "1.1.0"
+  url "https://github.com/jurek-zsl/homebrew-antiQuarantine/releases/download/v1.2.0/aq"
+  sha256 "c1ab8165ce4bfda0a8d51fb327b1b4830c5c6b116d5261191f093fe774274dce"
+  version "1.2.0"
 
   def install
     bin.install "aq"
@@ -14,8 +14,8 @@ class Aq < Formula
       Thanks for installing aq!
       Example:
         aq MyApp.app
-        aq --remove MyApp.app
-        aq --folder ~/Downloads
+        aq -r MyApp.app
+        aq -f ~/Downloads
     EOS
   end
 end

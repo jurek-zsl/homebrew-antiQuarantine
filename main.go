@@ -4,12 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
+
+	"golang.org/x/sys/unix"
 )
 
-const version = "1.0.0"
+const version = "1.2.0"
+const quarantineAttribute = "com.apple.quarantine"
 
 func main() {
 	// Manual arg parse to support long flags and combined -rf
@@ -38,17 +42,22 @@ func main() {
 
 	if folderArg != "" {
 		// Folder mode
-		if err := ensureExists(folderArg); err != nil {
-			fmt.Fprintln(os.Stderr, "Directory not found:", folderArg)
+		absPath, err := filepath.Abs(folderArg)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Error getting absolute path:", err)
+			os.Exit(1)
+		}
+		if err := ensureExists(absPath); err != nil {
+			fmt.Fprintln(os.Stderr, "Directory not found:", absPath)
 			os.Exit(2)
 		}
 		if removeFlag {
-			if err := removeQuarantineRecursive(folderArg); err != nil {
-				fmt.Fprintln(os.Stderr, "Errors occurred:", err)
+			if err := processPathParallel(absPath, true); err != nil {
+				fmt.Fprintln(os.Stderr, "Errors occurred during removal:", err)
 				os.Exit(1)
 			}
 		} else {
-			if err := listQuarantinedInFolder(folderArg); err != nil {
+			if err := processPathParallel(absPath, false); err != nil {
 				fmt.Fprintln(os.Stderr, "Error listing folder:", err)
 				os.Exit(1)
 			}
@@ -63,22 +72,27 @@ func main() {
 	}
 
 	target := positional[0]
-	if err := ensureExists(target); err != nil {
-		fmt.Fprintln(os.Stderr, "File not found:", target)
-		os.Exit(2)
-	}
+	// No need for ensureExists, the xattr calls will fail if the file doesn't exist.
 
 	if removeFlag {
-		if err := removeQuarantine(target); err != nil {
+		if err := removeQuarantine(target, false); err != nil {
+			// Check if the error is because the file doesn't exist
+			if os.IsNotExist(err) {
+				fmt.Fprintln(os.Stderr, "File not found:", target)
+				os.Exit(2)
+			}
 			fmt.Fprintln(os.Stderr, "Failed to remove quarantine:", err)
 			os.Exit(1)
 		}
-		fmt.Println("Removed quarantine from:", target)
 		os.Exit(0)
 	}
 
 	has, err := hasQuarantine(target)
 	if err != nil {
+		if os.IsNotExist(err) {
+			fmt.Fprintln(os.Stderr, "File not found:", target)
+			os.Exit(2)
+		}
 		fmt.Fprintln(os.Stderr, "Error checking xattr:", err)
 		os.Exit(1)
 	}
@@ -100,8 +114,8 @@ func printUsage() {
 	fmt.Fprintln(os.Stderr, "  aq -v, --version         # print version")
 	fmt.Fprintln(os.Stderr, "  aq -h, --help            # show help")
 	fmt.Fprintln(os.Stderr, "\nNotes:")
-	fmt.Fprintln(os.Stderr, "  This tool calls the system \"xattr\" command to detect and remove the")
-	fmt.Fprintln(os.Stderr, "  com.apple.quarantine extended attribute. It must be run on macOS.")
+	fmt.Fprintln(os.Stderr, "  This tool uses native macOS APIs to detect and remove the")
+	fmt.Fprintln(os.Stderr, "  com.apple.quarantine extended attribute for maximum performance.")
 }
 
 // Hidden promotional ad for Cat2gether — triggered by -c2g / --cat2gether (not shown in help)
@@ -227,79 +241,114 @@ func ensureExists(path string) error {
 }
 
 func hasQuarantine(path string) (bool, error) {
-	// Use `xattr <path>` and check output for com.apple.quarantine
-	out, err := exec.Command("xattr", path).Output()
-	if err != nil {
-		// xattr may exit with non-zero on error; if it's exit status 1 and output empty,
-		// treat as no attributes. But we'll return the error only if it's unexpected.
-		// To be conservative: if output contains the attr, return true; else return false without error when exit code indicates no attrs.
-		s := strings.TrimSpace(string(out))
-		if s == "" {
-			// No attributes
-			return false, nil
-		}
-		// otherwise return error
-		return strings.Contains(s, "com.apple.quarantine"), nil
+	// Pass a nil buffer to just check for existence and get the size.
+	_, err := unix.Getxattr(path, quarantineAttribute, nil)
+	if err == nil {
+		return true, nil // Attribute exists
 	}
-	return strings.Contains(string(out), "com.apple.quarantine"), nil
+	if err == unix.ENOATTR || err == unix.ENODATA {
+		return false, nil // Attribute does not exist, not an error
+	}
+	return false, err // Another error occurred
 }
 
-func removeQuarantine(path string) error {
-	fmt.Println("Removing quarantine from:", path)
-	cmd := exec.Command("xattr", "-d", "com.apple.quarantine", path)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("xattr failed: %s: %w", strings.TrimSpace(string(out)), err)
-	}
-	return nil
-}
-
-func listQuarantinedInFolder(root string) error {
-	return filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			// If we can't access an entry, report and continue
-			fmt.Fprintln(os.Stderr, "skipping (access error):", path, "->", err)
-			return nil
-		}
-		// check every file/dir
-		has, err := hasQuarantine(path)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "error checking xattr for:", path, "->", err)
-			return nil
-		}
-		if has {
-			fmt.Println(path)
+func removeQuarantine(path string, quiet bool) error {
+	err := unix.Removexattr(path, quarantineAttribute)
+	if err == nil {
+		if !quiet {
+			fmt.Println("Removed quarantine from:", path)
 		}
 		return nil
-	})
+	}
+	if err == unix.ENOATTR || err == unix.ENODATA {
+		return nil // Attribute was not there, which is fine
+	}
+	return fmt.Errorf("xattr remove failed on %s: %w", path, err)
 }
 
-func removeQuarantineRecursive(root string) error {
-	var hadErr bool
-	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+func getDeviceID(path string) (uint64, error) {
+	var stat unix.Stat_t
+	err := unix.Stat(path, &stat)
+	if err != nil {
+		return 0, err
+	}
+	return uint64(stat.Dev), nil
+}
+
+func processPathParallel(root string, remove bool) error {
+	rootDeviceID, err := getDeviceID(root)
+	if err != nil {
+		return fmt.Errorf("could not get device ID for root: %w", err)
+	}
+
+	paths := make(chan string, 100)
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	var errors []string
+
+	numWorkers := runtime.NumCPU()
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for path := range paths {
+				has, err := hasQuarantine(path)
+				if err != nil {
+					mu.Lock()
+					errors = append(errors, fmt.Sprintf("error checking xattr for %s: %v", path, err))
+					mu.Unlock()
+					continue
+				}
+				if has {
+					if remove {
+						if err := removeQuarantine(path, true); err != nil {
+							mu.Lock()
+							errors = append(errors, fmt.Sprintf("failed to remove quarantine from %s: %v", path, err))
+							mu.Unlock()
+						} else {
+							fmt.Println("Removed quarantine from:", path)
+						}
+					} else {
+						fmt.Println(path)
+					}
+				}
+			}
+		}()
+	}
+
+	walkErr := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "skipping (access error):", path, "->", err)
-			return nil
+			return nil // Continue walking
 		}
-		has, err := hasQuarantine(path)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "error checking xattr for:", path, "->", err)
-			hadErr = true
-			return nil
-		}
-		if has {
-			if err := removeQuarantine(path); err != nil {
-				fmt.Fprintln(os.Stderr, "failed to remove quarantine from:", path, "->", err)
-				hadErr = true
+
+		// Check for filesystem boundary
+		if d.IsDir() {
+			deviceID, err := getDeviceID(path)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "skipping (stat error):", path, "->", err)
+				return filepath.SkipDir
+			}
+			if deviceID != rootDeviceID {
+				fmt.Fprintln(os.Stderr, "skipping (filesystem boundary):", path)
+				return filepath.SkipDir
 			}
 		}
+
+		paths <- path
 		return nil
 	})
-	if err != nil {
-		return err
+
+	close(paths)
+	wg.Wait()
+
+	if walkErr != nil {
+		return walkErr
 	}
-	if hadErr {
-		return errors.New("some files failed to update; see stderr for details")
+
+	if len(errors) > 0 {
+		return fmt.Errorf("encountered %d errors:\n%s", len(errors), strings.Join(errors, "\n"))
 	}
+
 	return nil
 }

@@ -1,0 +1,17 @@
+hyperfine -N \
+  --prepare 'sync' \
+  './aq -f .' \
+  'fd -t f . -x xattr {}'
+
+./aq -f . ran
+    1.69 ± 0.10 times faster than fd -t f . -x xattr {}
+_____________________________________________________________
+
+hyperfine -N \
+  --prepare 'sync' \
+  './aq main.go' \
+  'xattr main.go'
+
+xattr main.go ran
+    1.54 ± 0.40 times faster than ./aq main.go
+
