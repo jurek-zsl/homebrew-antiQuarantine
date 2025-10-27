@@ -1,6 +1,6 @@
 hyperfine -N \
   --prepare 'sync' \
-  './aq -f .' \
+  'aq -f .' \
   'fd -t f . -x xattr {}'
 
 ./aq -f . ran
@@ -9,7 +9,7 @@ _____________________________________________________________
 
 hyperfine -N \
   --prepare 'sync' \
-  './aq main.go' \
+  'aq main.go' \
   'xattr main.go'
 
 xattr main.go ran
