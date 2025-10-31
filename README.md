@@ -31,6 +31,8 @@ Simple CLI tool for removing the `com.apple.quarantine` extended attribute from 
   ```
 ## 📋Usage
 
+[![asciicast](https://asciinema.org/a/aFyyYOOxaUAxTdKa7gw2ZLNk1.svg)](https://asciinema.org/a/aFyyYOOxaUAxTdKa7gw2ZLNk1)
+
 > [!TIP]
 > I recommend putting filenames and directories in quotes, if they contain spaces or special symbols.
 
