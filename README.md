@@ -90,6 +90,37 @@ sudo mv aq /usr/local/bin/
 
 ---
 
+## 🗑️ Uninstallation
+
+If you ever need to remove `antiQuarantine`, use the command corresponding to your installation method:
+
+### If installed via One-Liner / Binary
+```bash
+sudo rm -f /usr/local/bin/aq
+```
+
+### If installed via Homebrew
+```bash
+# Uninstall the formula
+brew uninstall aq
+
+# (Optional) Remove the tap
+brew untap jurek-zsl/antiquarantine
+```
+
+### If installed via Go (`go install`)
+```bash
+rm -f $(go env GOPATH)/bin/aq
+```
+
+### 🧹 Clean Up History Vault (Optional)
+To purge the local SQLite undo history database:
+```bash
+rm -rf ~/.local/share/antiQuarantine
+```
+
+---
+
 ## 📋 Quick Usage Guide
 
 ### 1. Check & Inspect Quarantine Status
