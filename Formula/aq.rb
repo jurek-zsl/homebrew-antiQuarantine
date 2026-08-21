@@ -1,16 +1,21 @@
 class Aq < Formula
   desc "High-performance macOS Gatekeeper quarantine management CLI"
   homepage "https://github.com/jurek-zsl/homebrew-antiQuarantine"
-  url "https://github.com/jurek-zsl/homebrew-antiQuarantine/archive/refs/tags/v2.0.0.tar.gz"
-  sha256 "b205ef598d7069798d834d43cca59eeae9b1d9873776794ff34061522dec8f29"
+  version "2.0.0"
   license "MIT"
-  head "https://github.com/jurek-zsl/homebrew-antiQuarantine.git", branch: "main"
 
-  depends_on "go" => :build
+  on_macos do
+    if Hardware::CPU.arm?
+      url "https://github.com/jurek-zsl/homebrew-antiQuarantine/releases/download/v2.0.0/aq_2.0.0_darwin_arm64.tar.gz"
+      sha256 "47f44a605f90a4b597c5f360916b03f8794ccafb1874483296749288b9d3ce7d"
+    else
+      url "https://github.com/jurek-zsl/homebrew-antiQuarantine/releases/download/v2.0.0/aq_2.0.0_darwin_amd64.tar.gz"
+      sha256 "66e30cca9c50a198e89aa416ba01aca6bbf37bdd5e7ca4fc44099ea2afc46427"
+    end
+  end
 
   def install
-    system "go", "build", *std_go_args(ldflags: "-s -w -X antiQuarantine/internal/cli.Version=#{version}"), "./cmd/aq"
-    generate_completions_from_executable(bin/"aq", "completion")
+    bin.install "aq"
   end
 
   def caveats
