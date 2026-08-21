@@ -1,1 +1,16 @@
+# Binaries
 aq
+dist/
+bin/
+
+# macOS metadata
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Test and coverage artifacts
+*.out
+*.test
+coverage.html

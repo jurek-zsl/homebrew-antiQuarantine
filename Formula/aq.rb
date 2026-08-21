@@ -1,21 +1,41 @@
 class Aq < Formula
-  desc "antiQuarantine — CLI to remove com.apple.quarantine xattr from files"
-  homepage "https://github.com/jurek-zsl/antiQuarantine/"
-  url "https://github.com/jurek-zsl/homebrew-antiQuarantine/releases/download/v1.2.0/aq"
-  sha256 "c1ab8165ce4bfda0a8d51fb327b1b4830c5c6b116d5261191f093fe774274dce"
-  version "1.2.0"
+  desc "High-performance macOS Gatekeeper quarantine management CLI"
+  homepage "https://github.com/jurek-zsl/homebrew-antiQuarantine"
+  url "https://github.com/jurek-zsl/homebrew-antiQuarantine/archive/refs/tags/v2.0.0.tar.gz"
+  sha256 "PENDING_SHA256"
+  license "MIT"
+  head "https://github.com/jurek-zsl/homebrew-antiQuarantine.git", branch: "main"
+
+  depends_on "go" => :build
 
   def install
-    bin.install "aq"
+    system "go", "build", *std_go_args(ldflags: "-s -w -X antiQuarantine/internal/cli.Version=#{version}"), "./cmd/aq"
+    generate_completions_from_executable(bin/"aq", "completion")
   end
 
   def caveats
     <<~EOS
-      Thanks for installing aq!
-      Example:
-        aq MyApp.app
-        aq -r MyApp.app
-        aq -f ~/Downloads
+      Thanks for installing antiQuarantine (aq) v2.0!
+      
+      Quick Examples:
+        aq check MyApp.app           # Check Gatekeeper status
+        aq inspect --json MyApp.app  # View origin download URL and timestamp
+        aq strip MyApp.app           # Strip quarantine attribute
+        aq fix-app MyApp.app         # Sanitize nested bundles & ad-hoc codesign
+        aq restore --last            # Undo last stripped attribute
+        aq watch ~/Downloads         # Background folder monitor daemon
+        aq tui                       # Interactive terminal visual browser
     EOS
+  end
+
+  test do
+    assert_match "aq", shell_output("#{bin}/aq --version")
+
+    test_file = testpath/"sample_quarantine.txt"
+    touch test_file
+    system "/usr/bin/xattr", "-w", "com.apple.quarantine", "0081;65d8ab12;Safari;B8C27D56-5B81-4C3D-B9AC-06D76D38B1C8", test_file
+    assert_match "HAS com.apple.quarantine", shell_output("#{bin}/aq check #{test_file}")
+    system "#{bin}/aq", "strip", test_file
+    assert_match "does NOT have com.apple.quarantine", shell_output("#{bin}/aq check #{test_file}")
   end
 end

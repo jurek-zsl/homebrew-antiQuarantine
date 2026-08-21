@@ -1,0 +1,43 @@
+version: 2
+project_name: aq
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: darwin-build
+    main: ./cmd/aq
+    binary: aq
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X antiQuarantine/internal/cli.Version={{.Version}} -X antiQuarantine/internal/cli.Commit={{.Commit}} -X antiQuarantine/internal/cli.Date={{.Date}}
+
+universal_binaries:
+  - id: aq-universal
+    replace: true
+    name_template: "aq"
+
+archives:
+  - format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: "checksums.txt"
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
