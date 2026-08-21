@@ -7,10 +7,10 @@ class Aq < Formula
   on_macos do
     if Hardware::CPU.arm?
       url "https://github.com/jurek-zsl/homebrew-antiQuarantine/releases/download/v2.0.0/aq_2.0.0_darwin_arm64.tar.gz"
-      sha256 "f55c16b6269718e016f0522c726326d48b1e8af3e2fc52331008e4f8f928e663"
+      sha256 "496ca31b6d836643efd557c259afd2463cacd7aa764c9b7903f252d0ff6dc981"
     else
       url "https://github.com/jurek-zsl/homebrew-antiQuarantine/releases/download/v2.0.0/aq_2.0.0_darwin_amd64.tar.gz"
-      sha256 "c224b4812b39897e2f2f8b9a0cd32e31d2cd83ae4785ac3cfb77caf79f080936"
+      sha256 "658fb9d92d7312c891bebea4dfb8dd931f83851a33522a9ff996abd6c737decd"
     end
   end
 
