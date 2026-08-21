@@ -25,7 +25,7 @@ func buildBinary(t *testing.T) string {
 		projectRoot = filepath.Dir(wd)
 	}
 
-	cmd := exec.Command("go", "build", "-o", binPath, "./cmd/aq")
+	cmd := exec.Command("go", "build", "-o", binPath, ".")
 	cmd.Env = append(os.Environ(), "GOPATH=/tmp/gopath", "GOCACHE=/tmp/gocache")
 	cmd.Dir = projectRoot
 	out, err := cmd.CombinedOutput()
