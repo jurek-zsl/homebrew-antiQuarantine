@@ -47,7 +47,19 @@ By leveraging direct Darwin kernel syscalls (`Lgetxattr`, `Lremovexattr`) with `
 
 ## 📥 Installation
 
-### Homebrew (Recommended)
+### 1. One-Liner Quick Install (No Homebrew Required)
+
+Install the standalone pre-compiled universal binary directly via terminal:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/jurek-zsl/homebrew-antiQuarantine/main/install.sh | bash
+```
+
+> **Note:** Automatically detects your architecture (`arm64` Apple Silicon or `x86_64` Intel) and installs `aq` to `/usr/local/bin/aq`.
+
+---
+
+### 2. Homebrew
 
 ```bash
 # Direct install
@@ -61,9 +73,15 @@ brew install aq
 brew upgrade aq
 ```
 
-### Build from Source
+---
+
+### 3. Build from Source
 
 ```bash
+# Using Go install
+go install github.com/jurek-zsl/homebrew-antiQuarantine/cmd/aq@latest
+
+# Or clone and build manually
 git clone https://github.com/jurek-zsl/homebrew-antiQuarantine.git
 cd homebrew-antiQuarantine
 go build -o aq ./cmd/aq
