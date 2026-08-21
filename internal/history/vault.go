@@ -22,12 +22,20 @@ type Record struct {
 }
 
 var (
+	vaultMu   sync.Mutex
 	vaultOnce sync.Once
 	vaultDB   *sql.DB
 	vaultErr  error
 )
 
 func getVaultDir() (string, error) {
+	if customDir := os.Getenv("AQ_VAULT_DIR"); customDir != "" {
+		if err := os.MkdirAll(customDir, 0755); err != nil {
+			return "", err
+		}
+		return customDir, nil
+	}
+
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
@@ -39,8 +47,22 @@ func getVaultDir() (string, error) {
 	return dir, nil
 }
 
+// ResetDBForTesting closes the active DB and resets the singleton for test isolation
+func ResetDBForTesting() {
+	vaultMu.Lock()
+	defer vaultMu.Unlock()
+	if vaultDB != nil {
+		_ = vaultDB.Close()
+		vaultDB = nil
+	}
+	vaultOnce = sync.Once{}
+	vaultErr = nil
+}
+
 // GetDB returns a lazily initialized singleton connection to the history vault
 func GetDB() (*sql.DB, error) {
+	vaultMu.Lock()
+	defer vaultMu.Unlock()
 	vaultOnce.Do(func() {
 		dir, err := getVaultDir()
 		if err != nil {

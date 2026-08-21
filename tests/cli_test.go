@@ -51,9 +51,14 @@ func TestCLILifecycle(t *testing.T) {
 		t.Fatalf("failed to set synthetic xattr: %v", err)
 	}
 
+	runAQ := func(args ...string) ([]byte, error) {
+		c := exec.Command(bin, args...)
+		c.Env = append(os.Environ(), "AQ_VAULT_DIR="+tmpDir)
+		return c.CombinedOutput()
+	}
+
 	// 1. Test aq check
-	checkCmd := exec.Command(bin, "check", testFile)
-	out, err := checkCmd.CombinedOutput()
+	out, err := runAQ("check", testFile)
 	if err != nil {
 		t.Fatalf("aq check failed: %v, out: %s", err, string(out))
 	}
@@ -62,8 +67,7 @@ func TestCLILifecycle(t *testing.T) {
 	}
 
 	// 2. Test aq inspect --json
-	inspectCmd := exec.Command(bin, "inspect", "--json", testFile)
-	out, err = inspectCmd.CombinedOutput()
+	out, err = runAQ("inspect", "--json", testFile)
 	if err != nil {
 		t.Fatalf("aq inspect --json failed: %v, out: %s", err, string(out))
 	}
@@ -82,8 +86,7 @@ func TestCLILifecycle(t *testing.T) {
 	_ = os.WriteFile(legacyFile, []byte("dummy pkg"), 0644)
 	_ = exec.Command("/usr/bin/xattr", "-w", "com.apple.quarantine", sampleQuarantine, legacyFile).Run()
 
-	stripLegacyCmd := exec.Command(bin, "-rf", legacyDir)
-	out, err = stripLegacyCmd.CombinedOutput()
+	out, err = runAQ("-rf", legacyDir)
 	if err != nil {
 		t.Fatalf("aq -rf failed: %v, out: %s", err, string(out))
 	}
@@ -92,22 +95,19 @@ func TestCLILifecycle(t *testing.T) {
 	}
 
 	// Verify legacy file is clean
-	checkCleanCmd := exec.Command(bin, legacyFile)
-	out, _ = checkCleanCmd.CombinedOutput()
+	out, _ = runAQ(legacyFile)
 	if !strings.Contains(string(out), "does NOT have com.apple.quarantine") {
 		t.Errorf("expected clean verification, got: %s", string(out))
 	}
 
 	// 4. Test aq strip on testFile with vault record
-	stripCmd := exec.Command(bin, "strip", testFile)
-	out, err = stripCmd.CombinedOutput()
+	out, err = runAQ("strip", testFile)
 	if err != nil {
 		t.Fatalf("aq strip failed: %v, out: %s", err, string(out))
 	}
 
 	// 5. Test aq restore
-	restoreCmd := exec.Command(bin, "restore", testFile)
-	out, err = restoreCmd.CombinedOutput()
+	out, err = runAQ("restore", testFile)
 	if err != nil {
 		t.Fatalf("aq restore failed: %v, out: %s", err, string(out))
 	}
@@ -116,8 +116,7 @@ func TestCLILifecycle(t *testing.T) {
 	}
 
 	// Verify restored
-	checkRestoredCmd := exec.Command(bin, "check", testFile)
-	out, _ = checkRestoredCmd.CombinedOutput()
+	out, _ = runAQ("check", testFile)
 	if !strings.Contains(string(out), "HAS com.apple.quarantine") {
 		t.Errorf("expected file to have quarantine after restore, got: %s", string(out))
 	}

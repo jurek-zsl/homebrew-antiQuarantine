@@ -19,6 +19,10 @@ func TestTUIModelAndInteractions(t *testing.T) {
 	}
 
 	tmpDir := t.TempDir()
+	t.Setenv("AQ_VAULT_DIR", tmpDir)
+	history.ResetDBForTesting()
+	defer history.ResetDBForTesting()
+
 	f1 := filepath.Join(tmpDir, "app1.zip")
 	f2 := filepath.Join(tmpDir, "app2.dmg")
 	f3 := filepath.Join(tmpDir, "clean.txt")
@@ -29,8 +33,6 @@ func TestTUIModelAndInteractions(t *testing.T) {
 
 	_ = quarantine.SetRawQuarantine(f1, sampleQuarantine)
 	_ = quarantine.SetRawQuarantine(f2, sampleQuarantine)
-
-	_ = history.ClearHistory()
 
 	// 1. Initialize TUI model
 	m, err := tui.NewModel(tmpDir)

@@ -16,11 +16,12 @@ func TestHistoryVaultAndRestore(t *testing.T) {
 	}
 
 	tmpDir := t.TempDir()
+	t.Setenv("AQ_VAULT_DIR", tmpDir)
+	history.ResetDBForTesting()
+	defer history.ResetDBForTesting()
+
 	testFile := filepath.Join(tmpDir, "vault_test.bin")
 	_ = os.WriteFile(testFile, []byte("data"), 0644)
-
-	// Clear history for clean test run
-	_ = history.ClearHistory()
 
 	// Set quarantine
 	_ = quarantine.SetRawQuarantine(testFile, sampleQuarantine)
