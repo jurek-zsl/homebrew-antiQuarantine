@@ -2,7 +2,7 @@ class Aq < Formula
   desc "High-performance macOS Gatekeeper quarantine management CLI"
   homepage "https://github.com/jurek-zsl/homebrew-antiQuarantine"
   url "https://github.com/jurek-zsl/homebrew-antiQuarantine/archive/refs/tags/v2.0.0.tar.gz"
-  sha256 "PENDING_SHA256"
+  sha256 "b205ef598d7069798d834d43cca59eeae9b1d9873776794ff34061522dec8f29"
   license "MIT"
   head "https://github.com/jurek-zsl/homebrew-antiQuarantine.git", branch: "main"
 
